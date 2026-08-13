@@ -359,11 +359,20 @@
 
   async function createOrUpdateGist(filename, description, isPublic, content) {
     const token = getToken();
+    if (!token) {
+      throw new Error(
+        "Token GitHub obrigatório.\n\n" +
+        "O GitHub não permite mais criar Gist sem login.\n" +
+        "Clique em ⚙ Config, cole um Personal Access Token com permissão \"gist\" e tente de novo."
+      );
+    }
+
     const headers = {
       "Accept": "application/vnd.github+json",
       "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      "X-GitHub-Api-Version": "2022-11-28",
     };
-    if (token) headers["Authorization"] = "Bearer " + token;
 
     const body = {
       description: description || "Salvo pelo HTML Editor Pro",
@@ -376,8 +385,8 @@
     let url = "https://api.github.com/gists";
     let method = "POST";
 
-    // Se já temos um gistId e token, tenta atualizar
-    if (currentGistId && token) {
+    // Se já temos um gistId, atualiza o mesmo
+    if (currentGistId) {
       url = "https://api.github.com/gists/" + currentGistId;
       method = "PATCH";
     }
@@ -390,7 +399,17 @@
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || "Erro HTTP " + res.status);
+      const msg = err.message || ("Erro HTTP " + res.status);
+      if (res.status === 401) {
+        throw new Error(
+          "Token inválido ou sem permissão.\n\n" +
+          "Gere um novo token em github.com/settings/tokens com a permissão \"gist\" e salve em ⚙ Config."
+        );
+      }
+      if (res.status === 403) {
+        throw new Error("Acesso negado (403). Verifique se o token tem a permissão \"gist\" e não está expirado.");
+      }
+      throw new Error(msg);
     }
 
     return res.json();
@@ -460,11 +479,40 @@
       closeModal(modalSaveGist);
     } catch (err) {
       setStatus("Erro ao salvar", "error");
-      alert("Falha ao salvar Gist:\n" + err.message + "\n\nDica: configure um Token GitHub nas configurações (⚙) para melhores resultados.");
+      alert("Falha ao salvar Gist:\n\n" + (err && err.message ? err.message : String(err)));
     } finally {
       btnConfirmSaveGist.disabled = false;
       btnConfirmSaveGist.textContent = "Salvar Gist";
     }
+  }
+
+  /** Salva só no navegador (sem GitHub) — sempre funciona */
+  function saveLocalProject() {
+    const content = editor.getValue();
+    if (!content.trim()) {
+      alert("O código está vazio.");
+      return;
+    }
+    let name = currentFileName || "sem-titulo.html";
+    if (!name.endsWith(".html") && !name.endsWith(".htm")) name += ".html";
+    const id = "local-" + Date.now();
+    const projects = getProjects();
+    const entry = {
+      id: id,
+      name: name,
+      description: "Salvo localmente",
+      html_url: "",
+      content: content,
+      local: true,
+      updated: new Date().toISOString(),
+    };
+    projects.unshift(entry);
+    saveProjects(projects);
+    setFileName(name);
+    isDirty = false;
+    setStatus("Salvo no navegador!", "saved");
+    renderProjectList();
+    alert("Projeto salvo neste navegador (não vai para a internet).\n\nPara salvar online no Gist, configure o token em ⚙ Config.");
   }
 
   async function loadGistById(idOrUrl) {
@@ -518,12 +566,27 @@
 
   function loadProject(entry) {
     if (isDirty && !confirm("Há alterações não salvas. Continuar?")) return;
+    if (entry.local || String(entry.id).startsWith("local-")) {
+      editor.setValue(entry.content || "");
+      setFileName(entry.name || "sem-titulo.html");
+      setGistLink(null);
+      isDirty = false;
+      setStatus("Projeto local carregado", "saved");
+      updatePreview();
+      updateCharCount();
+      renderProjectList();
+      return;
+    }
     loadGistById(entry.id);
   }
 
   function removeProject(id, e) {
     if (e) e.stopPropagation();
-    if (!confirm("Remover este projeto da lista local? (o Gist continua no GitHub)")) return;
+    const isLocal = String(id).startsWith("local-");
+    const msg = isLocal
+      ? "Remover este projeto local?"
+      : "Remover este projeto da lista local? (o Gist continua no GitHub)";
+    if (!confirm(msg)) return;
     const projects = getProjects().filter((p) => p.id !== id);
     saveProjects(projects);
     if (currentGistId === id) setGistLink(null);
@@ -535,23 +598,24 @@
     projectList.innerHTML = "";
 
     if (!projects.length) {
-      projectList.innerHTML = `<li class="empty">Nenhum projeto salvo ainda.<br><br>Use o botão <strong>Salvar Gist</strong> para guardar online.</li>`;
+      projectList.innerHTML = `<li class="empty">Nenhum projeto salvo ainda.<br><br>Use <strong>Salvar Gist</strong> (online) ou salve localmente.</li>`;
       return;
     }
 
     projects.forEach((p) => {
       const li = document.createElement("li");
       if (p.id === currentGistId) li.classList.add("active");
+      const label = p.local ? (escapeHtml(p.name) + " (local)") : escapeHtml(p.name);
       li.innerHTML = `
-        <span class="proj-name" title="${p.name}">${escapeHtml(p.name)}</span>
+        <span class="proj-name" title="${escapeHtml(p.name)}">${label}</span>
         <span class="proj-actions">
-          <button title="Abrir no GitHub" class="open">↗</button>
+          ${p.html_url ? '<button title="Abrir no GitHub" class="open">↗</button>' : ""}
           <button title="Remover da lista" class="del">✕</button>
         </span>
       `;
       li.addEventListener("click", (e) => {
         if (e.target.closest(".open")) {
-          window.open(p.html_url, "_blank");
+          if (p.html_url) window.open(p.html_url, "_blank");
           return;
         }
         if (e.target.closest(".del")) {
@@ -697,11 +761,25 @@
 
   btnConfirmSaveGist.addEventListener("click", confirmSaveGist);
 
+  const btnSaveLocal = document.getElementById("btn-save-local");
+  if (btnSaveLocal) {
+    btnSaveLocal.addEventListener("click", () => {
+      closeModal(modalSaveGist);
+      saveLocalProject();
+    });
+  }
+
   if (btnSaveToken) {
     btnSaveToken.addEventListener("click", () => {
-      setToken(githubTokenInput ? githubTokenInput.value.trim() : "");
+      const t = githubTokenInput ? githubTokenInput.value.trim() : "";
+      setToken(t);
       closeModal(modalSettings);
-      setStatus("Token salvo", "saved");
+      if (t) {
+        setStatus("Token salvo", "saved");
+        alert("Token salvo neste navegador.\nAgora você pode clicar em Salvar Gist.");
+      } else {
+        setStatus("Token removido", "saved");
+      }
     });
   }
 

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTML Editor Pro — Upload, Edite, Salve e Visualize</title>
-  <link rel="stylesheet" href="styles.css?v=4">
+  <link rel="stylesheet" href="styles.css?v=5">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
@@ -167,8 +167,9 @@
         <input type="checkbox" id="gist-public">
         <span>Tornar público (visível para todos)</span>
       </label>
-      <div class="modal-actions">
+      <div class="modal-actions" style="flex-wrap:wrap">
         <button class="btn btn-secondary" data-close>Cancelar</button>
+        <button class="btn btn-secondary" id="btn-save-local" type="button">Só no navegador</button>
         <button class="btn btn-accent" id="btn-confirm-save-gist">Salvar Gist</button>
       </div>
     </div>
@@ -180,13 +181,13 @@
     <div class="modal-box">
       <h3>Configurações</h3>
       <p class="modal-desc">
-        Para salvar Gists com sua conta (recomendado), crie um
+        O GitHub <strong>exige login</strong> para criar Gist.
+        Crie um
         <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener">Personal Access Token</a>
         com permissão <code>gist</code> e cole abaixo.
-        Sem token os Gists são anônimos (públicos e com limite).
       </p>
       <label class="field">
-        <span>GitHub Token (opcional)</span>
+        <span>GitHub Token (obrigatório para Gist)</span>
         <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
       </label>
       <div class="modal-actions">
@@ -223,6 +224,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/xml-hint.min.js"></script>
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
