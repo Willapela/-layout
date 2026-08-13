@@ -97,6 +97,26 @@
     else localStorage.removeItem(TOKEN_KEY);
   }
 
+  function openModal(modal) {
+    if (!modal) return;
+    modal.hidden = false;
+    modal.removeAttribute("hidden");
+    modal.style.display = "flex";
+  }
+
+  function closeModal(modal) {
+    if (!modal) return;
+    modal.hidden = true;
+    modal.setAttribute("hidden", "");
+    modal.style.display = "none";
+  }
+
+  function closeAllModals() {
+    closeModal(modalSaveGist);
+    closeModal(modalSettings);
+    closeModal(modalLoadGist);
+  }
+
   // ========== Funções principais ==========
 
   function getDefaultHTML() {
@@ -367,8 +387,8 @@
     gistFilename.value = currentFileName;
     gistDescription.value = "";
     gistPublic.checked = false;
-    modalSaveGist.hidden = false;
-    gistFilename.focus();
+    openModal(modalSaveGist);
+    setTimeout(() => gistFilename.focus(), 50);
   }
 
   async function confirmSaveGist() {
@@ -411,7 +431,7 @@
       saveProjects(projects);
       renderProjectList();
 
-      modalSaveGist.hidden = true;
+      closeModal(modalSaveGist);
     } catch (err) {
       setStatus("Erro ao salvar", "error");
       alert("Falha ao salvar Gist:\n" + err.message + "\n\nDica: configure um Token GitHub nas configurações (⚙) para melhores resultados.");
@@ -463,7 +483,7 @@
         saveProjects(projects);
       }
       renderProjectList();
-      modalLoadGist.hidden = true;
+      closeModal(modalLoadGist);
     } catch (err) {
       setStatus("Erro ao carregar", "error");
       alert("Não foi possível carregar o Gist:\n" + err.message);
@@ -489,7 +509,7 @@
     projectList.innerHTML = "";
 
     if (!projects.length) {
-      projectList.innerHTML = `<li class="empty">Nenhum projeto salvo ainda.<br>Use <strong>Salvar Gist</strong> para começar.</li>`;
+      projectList.innerHTML = `<li class="empty">Nenhum projeto salvo ainda.<br><br>Use o botão <strong>Salvar Gist</strong> para guardar online.</li>`;
       return;
     }
 
@@ -602,39 +622,66 @@
   btnCloseFullscreen.addEventListener("click", closeFullscreen);
   btnOpenNewFs.addEventListener("click", openInNewTab);
 
+  function isMobileLayout() {
+    return window.matchMedia("(max-width: 900px)").matches;
+  }
+
+  function setSidebarOpen(open) {
+    if (open) {
+      sidebar.classList.remove("collapsed");
+    } else {
+      sidebar.classList.add("collapsed");
+    }
+    const backdrop = document.getElementById("sidebar-backdrop");
+    if (backdrop) {
+      backdrop.classList.toggle("visible", open && isMobileLayout());
+    }
+  }
+
   btnToggleSidebar.addEventListener("click", () => {
-    sidebar.classList.toggle("collapsed");
+    const willOpen = sidebar.classList.contains("collapsed");
+    setSidebarOpen(willOpen);
   });
 
   btnRefreshList.addEventListener("click", renderProjectList);
 
   btnLoadGistId.addEventListener("click", () => {
     gistIdInput.value = "";
-    modalLoadGist.hidden = false;
-    gistIdInput.focus();
+    openModal(modalLoadGist);
+    setTimeout(() => gistIdInput.focus(), 50);
   });
 
-  btnSettings.addEventListener("click", () => {
-    githubTokenInput.value = getToken();
-    modalSettings.hidden = false;
-  });
+  if (btnSettings) {
+    btnSettings.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (githubTokenInput) githubTokenInput.value = getToken();
+      openModal(modalSettings);
+      setTimeout(() => {
+        if (githubTokenInput) githubTokenInput.focus();
+      }, 50);
+    });
+  }
 
   btnConfirmSaveGist.addEventListener("click", confirmSaveGist);
-  btnSaveToken.addEventListener("click", () => {
-    setToken(githubTokenInput.value.trim());
-    modalSettings.hidden = true;
-    setStatus("Token salvo", "saved");
-  });
+
+  if (btnSaveToken) {
+    btnSaveToken.addEventListener("click", () => {
+      setToken(githubTokenInput ? githubTokenInput.value.trim() : "");
+      closeModal(modalSettings);
+      setStatus("Token salvo", "saved");
+    });
+  }
+
   btnConfirmLoadGist.addEventListener("click", () => {
     loadGistById(gistIdInput.value);
   });
 
-  // Fechar modais
+  // Fechar modais (backdrop e botões Cancelar/Fechar)
   document.querySelectorAll("[data-close]").forEach((el) => {
-    el.addEventListener("click", () => {
-      modalSaveGist.hidden = true;
-      modalSettings.hidden = true;
-      modalLoadGist.hidden = true;
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeAllModals();
     });
   });
 
@@ -652,9 +699,7 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
       if (!fullscreenOverlay.hidden) closeFullscreen();
-      modalSaveGist.hidden = true;
-      modalSettings.hidden = true;
-      modalLoadGist.hidden = true;
+      closeAllModals();
     }
   });
 
@@ -666,6 +711,23 @@
   });
 
   // ========== Inicialização ==========
+  // No celular a sidebar começa fechada
+  if (isMobileLayout()) {
+    setSidebarOpen(false);
+  }
+
+  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+  if (sidebarBackdrop) {
+    sidebarBackdrop.addEventListener("click", () => setSidebarOpen(false));
+  }
+
+  window.addEventListener("resize", () => {
+    if (!isMobileLayout()) {
+      sidebar.classList.remove("collapsed");
+      if (sidebarBackdrop) sidebarBackdrop.classList.remove("visible");
+    }
+  });
+
   updatePreview();
   updateCharCount();
   setStatus("Pronto", "saved");
