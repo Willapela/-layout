@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTML Editor Pro — Upload, Edite e Visualize</title>
+  <title>HTML Editor Pro — Upload, Edite, Salve e Visualize</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
@@ -14,110 +14,195 @@
     <!-- Header -->
     <header class="header">
       <div class="logo">
+        <button class="icon-btn sidebar-toggle" id="btn-toggle-sidebar" title="Mostrar/ocultar projetos">☰</button>
         <span class="logo-icon">&lt;/&gt;</span>
         <div>
           <h1>HTML Editor Pro</h1>
-          <p class="tagline">Upload • Edite • Visualize</p>
+          <p class="tagline">Upload • Edite • Salve • Visualize</p>
         </div>
       </div>
       <div class="header-actions">
         <label class="btn btn-primary" for="file-input">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="17 8 12 3 7 8"/>
             <line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
-          Upload HTML
+          Upload
         </label>
         <input type="file" id="file-input" accept=".html,.htm,.txt" hidden>
-        <button class="btn btn-secondary" id="btn-new" title="Novo arquivo">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="12" y1="18" x2="12" y2="12"/>
-            <line x1="9" y1="15" x2="15" y2="15"/>
+
+        <button class="btn btn-secondary" id="btn-new" title="Novo arquivo">Novo</button>
+        <button class="btn btn-secondary" id="btn-download" title="Baixar HTML">Baixar</button>
+        <button class="btn btn-accent" id="btn-save-gist" title="Salvar online via Gist">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
           </svg>
-          Novo
+          Salvar Gist
         </button>
-        <button class="btn btn-secondary" id="btn-download" title="Baixar HTML">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Baixar
-        </button>
-        <button class="btn btn-ghost" id="btn-fullscreen-preview" title="Preview em tela cheia">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="btn btn-ghost" id="btn-fullscreen-preview" title="Visualizar HTML completo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="15 3 21 3 21 9"/>
             <polyline points="9 21 3 21 3 15"/>
             <line x1="21" y1="3" x2="14" y2="10"/>
             <line x1="3" y1="21" x2="10" y2="14"/>
           </svg>
+          Ver completo
         </button>
+        <button class="btn btn-ghost" id="btn-settings" title="Configurações (Token GitHub)">⚙</button>
       </div>
     </header>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <span class="file-name" id="file-name">sem-titulo.html</span>
-        <span class="status" id="status">Pronto</span>
-      </div>
-      <div class="toolbar-right">
-        <label class="toggle">
-          <input type="checkbox" id="live-preview" checked>
-          <span>Preview ao vivo</span>
-        </label>
-        <button class="btn btn-sm" id="btn-run" title="Atualizar preview (Ctrl+Enter)">
-          ▶ Atualizar
-        </button>
-        <button class="btn btn-sm" id="btn-format" title="Formatar código">
-          Formatar
-        </button>
+    <div class="main-layout">
+      <!-- Sidebar: Projetos salvos -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <h2>Projetos salvos</h2>
+          <button class="icon-btn" id="btn-refresh-list" title="Atualizar lista">↻</button>
+        </div>
+        <div class="sidebar-actions">
+          <button class="btn btn-sm btn-block" id="btn-load-gist-id" title="Carregar Gist por ID">
+            + Carregar Gist por ID
+          </button>
+        </div>
+        <ul class="project-list" id="project-list">
+          <!-- preenchido via JS -->
+        </ul>
+        <div class="sidebar-footer">
+          <p class="hint">Salvos localmente + Gist</p>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <span class="file-name" id="file-name">sem-titulo.html</span>
+            <span class="status" id="status">Pronto</span>
+            <span class="gist-link" id="gist-link" hidden></span>
+          </div>
+          <div class="toolbar-right">
+            <label class="toggle">
+              <input type="checkbox" id="live-preview" checked>
+              <span>Preview ao vivo</span>
+            </label>
+            <button class="btn btn-sm" id="btn-run" title="Atualizar preview (Ctrl+Enter)">▶ Atualizar</button>
+            <button class="btn btn-sm" id="btn-format" title="Formatar código">Formatar</button>
+          </div>
+        </div>
+
+        <!-- Workspace -->
+        <main class="workspace">
+          <div class="panel editor-panel" id="editor-panel">
+            <div class="panel-header">
+              <span>Editor</span>
+              <div class="panel-actions">
+                <button class="icon-btn" id="btn-clear" title="Limpar">✕</button>
+              </div>
+            </div>
+            <div id="editor-container"></div>
+          </div>
+
+          <div class="resizer" id="resizer"></div>
+
+          <div class="panel preview-panel" id="preview-panel">
+            <div class="panel-header">
+              <span>Preview</span>
+              <div class="panel-actions">
+                <button class="icon-btn" id="btn-refresh" title="Recarregar">↻</button>
+                <button class="icon-btn" id="btn-open-new" title="Abrir em nova aba">↗</button>
+              </div>
+            </div>
+            <iframe id="preview" sandbox="allow-scripts allow-same-origin allow-modals allow-forms" title="Preview do HTML"></iframe>
+          </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+          <span>HTML Editor Pro • Arquivos locais + Gists • Nada é enviado sem você clicar em Salvar</span>
+          <span id="char-count">0 caracteres</span>
+        </footer>
       </div>
     </div>
-
-    <!-- Main workspace -->
-    <main class="workspace">
-      <div class="panel editor-panel" id="editor-panel">
-        <div class="panel-header">
-          <span>Editor</span>
-          <div class="panel-actions">
-            <button class="icon-btn" id="btn-clear" title="Limpar">✕</button>
-          </div>
-        </div>
-        <div id="editor-container"></div>
-      </div>
-
-      <div class="resizer" id="resizer"></div>
-
-      <div class="panel preview-panel" id="preview-panel">
-        <div class="panel-header">
-          <span>Preview</span>
-          <div class="panel-actions">
-            <button class="icon-btn" id="btn-refresh" title="Recarregar">↻</button>
-            <button class="icon-btn" id="btn-open-new" title="Abrir em nova aba">↗</button>
-          </div>
-        </div>
-        <iframe id="preview" sandbox="allow-scripts allow-same-origin allow-modals allow-forms" title="Preview do HTML"></iframe>
-      </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="footer">
-      <span>HTML Editor Pro • Funciona 100% no navegador • Seus arquivos não saem do seu dispositivo</span>
-      <span id="char-count">0 caracteres</span>
-    </footer>
   </div>
 
   <!-- Fullscreen preview overlay -->
   <div class="fullscreen-overlay" id="fullscreen-overlay" hidden>
     <div class="fullscreen-header">
-      <span>Preview em tela cheia</span>
-      <button class="btn btn-sm" id="btn-close-fullscreen">Fechar (Esc)</button>
+      <span>Visualização completa do HTML</span>
+      <div class="fullscreen-actions">
+        <button class="btn btn-sm" id="btn-open-new-fs">Abrir em nova aba</button>
+        <button class="btn btn-sm" id="btn-close-fullscreen">Fechar (Esc)</button>
+      </div>
     </div>
     <iframe id="preview-fullscreen" sandbox="allow-scripts allow-same-origin allow-modals allow-forms" title="Preview tela cheia"></iframe>
+  </div>
+
+  <!-- Modal: Salvar Gist -->
+  <div class="modal" id="modal-save-gist" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box">
+      <h3>Salvar no GitHub Gist</h3>
+      <p class="modal-desc">O projeto será salvo online. Você pode deixar público ou secreto.</p>
+      <label class="field">
+        <span>Nome do arquivo</span>
+        <input type="text" id="gist-filename" placeholder="meu-projeto.html" value="sem-titulo.html">
+      </label>
+      <label class="field">
+        <span>Descrição (opcional)</span>
+        <input type="text" id="gist-description" placeholder="Descrição do projeto">
+      </label>
+      <label class="field checkbox">
+        <input type="checkbox" id="gist-public">
+        <span>Tornar público (visível para todos)</span>
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" data-close>Cancelar</button>
+        <button class="btn btn-accent" id="btn-confirm-save-gist">Salvar Gist</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Configurações / Token -->
+  <div class="modal" id="modal-settings" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box">
+      <h3>Configurações</h3>
+      <p class="modal-desc">
+        Para salvar Gists com sua conta (recomendado), crie um
+        <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener">Personal Access Token</a>
+        com permissão <code>gist</code> e cole abaixo.
+        Sem token os Gists são anônimos (públicos e com limite).
+      </p>
+      <label class="field">
+        <span>GitHub Token (opcional)</span>
+        <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" data-close>Fechar</button>
+        <button class="btn btn-accent" id="btn-save-token">Salvar token</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Carregar por ID -->
+  <div class="modal" id="modal-load-gist" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-box">
+      <h3>Carregar Gist por ID</h3>
+      <p class="modal-desc">Cole o ID do Gist (ou a URL completa).</p>
+      <label class="field">
+        <span>ID ou URL do Gist</span>
+        <input type="text" id="gist-id-input" placeholder="abc123def ou https://gist.github.com/...">
+      </label>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" data-close>Cancelar</button>
+        <button class="btn btn-accent" id="btn-confirm-load-gist">Carregar</button>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>

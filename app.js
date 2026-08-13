@@ -3,14 +3,18 @@
 
   // ========== Estado ==========
   let currentFileName = "sem-titulo.html";
+  let currentGistId = null;
   let isDirty = false;
   let livePreviewEnabled = true;
   let debounceTimer = null;
+  const STORAGE_KEY = "html-editor-pro-projects";
+  const TOKEN_KEY = "html-editor-pro-token";
 
   // ========== Elementos ==========
   const fileInput = document.getElementById("file-input");
   const btnNew = document.getElementById("btn-new");
   const btnDownload = document.getElementById("btn-download");
+  const btnSaveGist = document.getElementById("btn-save-gist");
   const btnRun = document.getElementById("btn-run");
   const btnFormat = document.getElementById("btn-format");
   const btnClear = document.getElementById("btn-clear");
@@ -18,16 +22,37 @@
   const btnOpenNew = document.getElementById("btn-open-new");
   const btnFullscreen = document.getElementById("btn-fullscreen-preview");
   const btnCloseFullscreen = document.getElementById("btn-close-fullscreen");
+  const btnOpenNewFs = document.getElementById("btn-open-new-fs");
+  const btnSettings = document.getElementById("btn-settings");
+  const btnToggleSidebar = document.getElementById("btn-toggle-sidebar");
+  const btnRefreshList = document.getElementById("btn-refresh-list");
+  const btnLoadGistId = document.getElementById("btn-load-gist-id");
   const livePreviewToggle = document.getElementById("live-preview");
   const fileNameEl = document.getElementById("file-name");
   const statusEl = document.getElementById("status");
   const charCountEl = document.getElementById("char-count");
+  const gistLinkEl = document.getElementById("gist-link");
   const preview = document.getElementById("preview");
   const previewFullscreen = document.getElementById("preview-fullscreen");
   const fullscreenOverlay = document.getElementById("fullscreen-overlay");
   const resizer = document.getElementById("resizer");
   const editorPanel = document.getElementById("editor-panel");
   const previewPanel = document.getElementById("preview-panel");
+  const sidebar = document.getElementById("sidebar");
+  const projectList = document.getElementById("project-list");
+
+  // Modals
+  const modalSaveGist = document.getElementById("modal-save-gist");
+  const modalSettings = document.getElementById("modal-settings");
+  const modalLoadGist = document.getElementById("modal-load-gist");
+  const gistFilename = document.getElementById("gist-filename");
+  const gistDescription = document.getElementById("gist-description");
+  const gistPublic = document.getElementById("gist-public");
+  const githubTokenInput = document.getElementById("github-token");
+  const gistIdInput = document.getElementById("gist-id-input");
+  const btnConfirmSaveGist = document.getElementById("btn-confirm-save-gist");
+  const btnSaveToken = document.getElementById("btn-save-token");
+  const btnConfirmLoadGist = document.getElementById("btn-confirm-load-gist");
 
   // ========== CodeMirror ==========
   const editor = CodeMirror(document.getElementById("editor-container"), {
@@ -43,18 +68,34 @@
     extraKeys: {
       "Ctrl-Enter": updatePreview,
       "Cmd-Enter": updatePreview,
-      "Ctrl-S": function (cm) {
-        downloadFile();
-        return false;
-      },
-      "Cmd-S": function (cm) {
-        downloadFile();
-        return false;
-      },
+      "Ctrl-S": function () { openSaveGistModal(); return false; },
+      "Cmd-S": function () { openSaveGistModal(); return false; },
       "Ctrl-Space": "autocomplete",
     },
     value: getDefaultHTML(),
   });
+
+  // ========== Storage ==========
+  function getProjects() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    } catch {
+      return [];
+    }
+  }
+
+  function saveProjects(list) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function getToken() {
+    return localStorage.getItem(TOKEN_KEY) || "";
+  }
+
+  function setToken(token) {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  }
 
   // ========== Funções principais ==========
 
@@ -94,11 +135,7 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-    p {
-      color: #8b949e;
-      line-height: 1.6;
-      margin-bottom: 1.5rem;
-    }
+    p { color: #8b949e; line-height: 1.6; margin-bottom: 1.5rem; }
     button {
       background: #58a6ff;
       color: #0d1117;
@@ -118,7 +155,7 @@
 <body>
   <div class="card">
     <h1>Olá, mundo! 👋</h1>
-    <p>Edite este código à esquerda e veja o resultado aqui em tempo real.</p>
+    <p>Edite este código à esquerda e veja o resultado aqui em tempo real. Use "Salvar Gist" para guardar online.</p>
     <button onclick="alert('Funcionando!')">Clique em mim</button>
   </div>
 </body>
@@ -127,17 +164,20 @@
 
   function updatePreview() {
     const code = editor.getValue();
-    const doc = preview.contentDocument || preview.contentWindow.document;
-    doc.open();
-    doc.write(code);
-    doc.close();
+    try {
+      const doc = preview.contentDocument || preview.contentWindow.document;
+      doc.open();
+      doc.write(code);
+      doc.close();
+    } catch (e) {}
 
-    // Atualiza também o fullscreen se estiver aberto
     if (!fullscreenOverlay.hidden) {
-      const docFs = previewFullscreen.contentDocument || previewFullscreen.contentWindow.document;
-      docFs.open();
-      docFs.write(code);
-      docFs.close();
+      try {
+        const docFs = previewFullscreen.contentDocument || previewFullscreen.contentWindow.document;
+        docFs.open();
+        docFs.write(code);
+        docFs.close();
+      } catch (e) {}
     }
 
     setStatus("Atualizado", "saved");
@@ -160,6 +200,17 @@
     fileNameEl.textContent = currentFileName;
   }
 
+  function setGistLink(id, htmlUrl) {
+    currentGistId = id;
+    if (id && htmlUrl) {
+      gistLinkEl.hidden = false;
+      gistLinkEl.innerHTML = `<a href="${htmlUrl}" target="_blank" rel="noopener">Gist ↗</a>`;
+    } else {
+      gistLinkEl.hidden = true;
+      gistLinkEl.innerHTML = "";
+    }
+  }
+
   function markDirty() {
     isDirty = true;
     setStatus("Editando…", "editing");
@@ -175,10 +226,12 @@
     reader.onload = function (e) {
       editor.setValue(e.target.result);
       setFileName(file.name);
+      setGistLink(null);
       isDirty = false;
       setStatus("Arquivo carregado", "saved");
       updatePreview();
       updateCharCount();
+      renderProjectList();
     };
     reader.onerror = function () {
       setStatus("Erro ao ler arquivo", "error");
@@ -205,15 +258,15 @@
   }
 
   function newFile() {
-    if (isDirty && !confirm("Há alterações não salvas. Deseja continuar e perder as mudanças?")) {
-      return;
-    }
+    if (isDirty && !confirm("Há alterações não salvas. Continuar?")) return;
     editor.setValue(getDefaultHTML());
     setFileName("sem-titulo.html");
+    setGistLink(null);
     isDirty = false;
     setStatus("Novo arquivo", "saved");
     updatePreview();
     updateCharCount();
+    renderProjectList();
   }
 
   function clearEditor() {
@@ -229,16 +282,17 @@
     const blob = new Blob([code], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
-    // Não revoga imediatamente para a aba conseguir carregar
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    setTimeout(() => URL.revokeObjectURL(url), 15000);
   }
 
   function openFullscreen() {
     const code = editor.getValue();
-    const doc = previewFullscreen.contentDocument || previewFullscreen.contentWindow.document;
-    doc.open();
-    doc.write(code);
-    doc.close();
+    try {
+      const doc = previewFullscreen.contentDocument || previewFullscreen.contentWindow.document;
+      doc.open();
+      doc.write(code);
+      doc.close();
+    } catch (e) {}
     fullscreenOverlay.hidden = false;
   }
 
@@ -246,20 +300,230 @@
     fullscreenOverlay.hidden = true;
   }
 
-  // Formatação simples (indentação básica)
   function formatCode() {
-    try {
-      let code = editor.getValue();
-      // Remove espaços extras no final das linhas
-      code = code.replace(/[ \t]+$/gm, "");
-      // Garante quebra de linha no final
-      if (!code.endsWith("\n")) code += "\n";
-      editor.setValue(code);
-      setStatus("Formatado", "saved");
-      updateCharCount();
-    } catch (e) {
-      setStatus("Erro ao formatar", "error");
+    let code = editor.getValue();
+    code = code.replace(/[ \t]+$/gm, "");
+    if (!code.endsWith("\n")) code += "\n";
+    editor.setValue(code);
+    setStatus("Formatado", "saved");
+    updateCharCount();
+  }
+
+  // ========== Gist ==========
+
+  async function createOrUpdateGist(filename, description, isPublic, content) {
+    const token = getToken();
+    const headers = {
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json",
+    };
+    if (token) headers["Authorization"] = "Bearer " + token;
+
+    const body = {
+      description: description || "Salvo pelo HTML Editor Pro",
+      public: !!isPublic,
+      files: {
+        [filename]: { content: content },
+      },
+    };
+
+    let url = "https://api.github.com/gists";
+    let method = "POST";
+
+    // Se já temos um gistId e token, tenta atualizar
+    if (currentGistId && token) {
+      url = "https://api.github.com/gists/" + currentGistId;
+      method = "PATCH";
     }
+
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Erro HTTP " + res.status);
+    }
+
+    return res.json();
+  }
+
+  async function fetchGist(id) {
+    const token = getToken();
+    const headers = { "Accept": "application/vnd.github+json" };
+    if (token) headers["Authorization"] = "Bearer " + token;
+
+    const res = await fetch("https://api.github.com/gists/" + id, { headers });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || "Gist não encontrado");
+    }
+    return res.json();
+  }
+
+  function openSaveGistModal() {
+    gistFilename.value = currentFileName;
+    gistDescription.value = "";
+    gistPublic.checked = false;
+    modalSaveGist.hidden = false;
+    gistFilename.focus();
+  }
+
+  async function confirmSaveGist() {
+    let filename = (gistFilename.value || "sem-titulo.html").trim();
+    if (!filename.endsWith(".html") && !filename.endsWith(".htm")) {
+      filename += ".html";
+    }
+    const description = gistDescription.value.trim();
+    const isPublic = gistPublic.checked;
+    const content = editor.getValue();
+
+    if (!content.trim()) {
+      alert("O código está vazio.");
+      return;
+    }
+
+    btnConfirmSaveGist.disabled = true;
+    btnConfirmSaveGist.textContent = "Salvando…";
+    setStatus("Salvando no Gist…", "editing");
+
+    try {
+      const data = await createOrUpdateGist(filename, description, isPublic, content);
+      setFileName(filename);
+      setGistLink(data.id, data.html_url);
+      isDirty = false;
+      setStatus("Salvo no Gist!", "saved");
+
+      // Guarda na lista local
+      const projects = getProjects();
+      const existing = projects.findIndex((p) => p.id === data.id);
+      const entry = {
+        id: data.id,
+        name: filename,
+        description: description || data.description || "",
+        html_url: data.html_url,
+        updated: new Date().toISOString(),
+      };
+      if (existing >= 0) projects[existing] = entry;
+      else projects.unshift(entry);
+      saveProjects(projects);
+      renderProjectList();
+
+      modalSaveGist.hidden = true;
+    } catch (err) {
+      setStatus("Erro ao salvar", "error");
+      alert("Falha ao salvar Gist:\n" + err.message + "\n\nDica: configure um Token GitHub nas configurações (⚙) para melhores resultados.");
+    } finally {
+      btnConfirmSaveGist.disabled = false;
+      btnConfirmSaveGist.textContent = "Salvar Gist";
+    }
+  }
+
+  async function loadGistById(idOrUrl) {
+    let id = (idOrUrl || "").trim();
+    // Extrai ID de URL
+    const match = id.match(/gist\.github\.com\/(?:[^/]+\/)?([a-f0-9]+)/i) ||
+                  id.match(/^([a-f0-9]+)$/i);
+    if (match) id = match[1];
+    if (!id) {
+      alert("ID inválido.");
+      return;
+    }
+
+    setStatus("Carregando Gist…", "editing");
+    try {
+      const data = await fetchGist(id);
+      const files = data.files || {};
+      const fileNames = Object.keys(files);
+      if (!fileNames.length) throw new Error("Gist sem arquivos");
+
+      // Prefere .html
+      let chosen = fileNames.find((n) => n.endsWith(".html") || n.endsWith(".htm")) || fileNames[0];
+      const file = files[chosen];
+      editor.setValue(file.content || "");
+      setFileName(chosen);
+      setGistLink(data.id, data.html_url);
+      isDirty = false;
+      setStatus("Gist carregado", "saved");
+      updatePreview();
+      updateCharCount();
+
+      // Adiciona à lista se não existir
+      const projects = getProjects();
+      if (!projects.some((p) => p.id === data.id)) {
+        projects.unshift({
+          id: data.id,
+          name: chosen,
+          description: data.description || "",
+          html_url: data.html_url,
+          updated: new Date().toISOString(),
+        });
+        saveProjects(projects);
+      }
+      renderProjectList();
+      modalLoadGist.hidden = true;
+    } catch (err) {
+      setStatus("Erro ao carregar", "error");
+      alert("Não foi possível carregar o Gist:\n" + err.message);
+    }
+  }
+
+  function loadProject(entry) {
+    if (isDirty && !confirm("Há alterações não salvas. Continuar?")) return;
+    loadGistById(entry.id);
+  }
+
+  function removeProject(id, e) {
+    if (e) e.stopPropagation();
+    if (!confirm("Remover este projeto da lista local? (o Gist continua no GitHub)")) return;
+    const projects = getProjects().filter((p) => p.id !== id);
+    saveProjects(projects);
+    if (currentGistId === id) setGistLink(null);
+    renderProjectList();
+  }
+
+  function renderProjectList() {
+    const projects = getProjects();
+    projectList.innerHTML = "";
+
+    if (!projects.length) {
+      projectList.innerHTML = `<li class="empty">Nenhum projeto salvo ainda.<br>Use <strong>Salvar Gist</strong> para começar.</li>`;
+      return;
+    }
+
+    projects.forEach((p) => {
+      const li = document.createElement("li");
+      if (p.id === currentGistId) li.classList.add("active");
+      li.innerHTML = `
+        <span class="proj-name" title="${p.name}">${escapeHtml(p.name)}</span>
+        <span class="proj-actions">
+          <button title="Abrir no GitHub" class="open">↗</button>
+          <button title="Remover da lista" class="del">✕</button>
+        </span>
+      `;
+      li.addEventListener("click", (e) => {
+        if (e.target.closest(".open")) {
+          window.open(p.html_url, "_blank");
+          return;
+        }
+        if (e.target.closest(".del")) {
+          removeProject(p.id, e);
+          return;
+        }
+        loadProject(p);
+      });
+      projectList.appendChild(li);
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   // ========== Resizer ==========
@@ -275,19 +539,16 @@
 
   document.addEventListener("mousemove", function (e) {
     if (!isResizing) return;
-
     const workspace = document.querySelector(".workspace");
     const rect = workspace.getBoundingClientRect();
 
     if (window.innerWidth <= 768) {
-      // Vertical
       const total = rect.height;
       const top = e.clientY - rect.top;
       const percent = Math.min(Math.max((top / total) * 100, 20), 80);
       editorPanel.style.flex = `0 0 ${percent}%`;
       previewPanel.style.flex = `0 0 ${100 - percent}%`;
     } else {
-      // Horizontal
       const total = rect.width;
       const left = e.clientX - rect.left;
       const percent = Math.min(Math.max((left / total) * 100, 20), 80);
@@ -310,28 +571,28 @@
     const file = e.target.files[0];
     if (file) {
       loadFile(file);
-      fileInput.value = ""; // permite re-upload do mesmo arquivo
+      fileInput.value = "";
     }
   });
 
   // Drag & drop
-  const app = document.querySelector(".app");
-  app.addEventListener("dragover", function (e) {
+  document.querySelector(".app").addEventListener("dragover", (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
   });
-  app.addEventListener("drop", function (e) {
+  document.querySelector(".app").addEventListener("drop", (e) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    if (file && (file.name.endsWith(".html") || file.name.endsWith(".htm") || file.type === "text/html" || file.type === "text/plain")) {
+    if (file && (file.name.match(/\.(html|htm|txt)$/i) || file.type === "text/html" || file.type === "text/plain")) {
       loadFile(file);
     } else {
-      alert("Por favor, solte um arquivo HTML (.html ou .htm).");
+      alert("Solte um arquivo HTML (.html ou .htm).");
     }
   });
 
   btnNew.addEventListener("click", newFile);
   btnDownload.addEventListener("click", downloadFile);
+  btnSaveGist.addEventListener("click", openSaveGistModal);
   btnRun.addEventListener("click", updatePreview);
   btnFormat.addEventListener("click", formatCode);
   btnClear.addEventListener("click", clearEditor);
@@ -339,6 +600,43 @@
   btnOpenNew.addEventListener("click", openInNewTab);
   btnFullscreen.addEventListener("click", openFullscreen);
   btnCloseFullscreen.addEventListener("click", closeFullscreen);
+  btnOpenNewFs.addEventListener("click", openInNewTab);
+
+  btnToggleSidebar.addEventListener("click", () => {
+    sidebar.classList.toggle("collapsed");
+  });
+
+  btnRefreshList.addEventListener("click", renderProjectList);
+
+  btnLoadGistId.addEventListener("click", () => {
+    gistIdInput.value = "";
+    modalLoadGist.hidden = false;
+    gistIdInput.focus();
+  });
+
+  btnSettings.addEventListener("click", () => {
+    githubTokenInput.value = getToken();
+    modalSettings.hidden = false;
+  });
+
+  btnConfirmSaveGist.addEventListener("click", confirmSaveGist);
+  btnSaveToken.addEventListener("click", () => {
+    setToken(githubTokenInput.value.trim());
+    modalSettings.hidden = true;
+    setStatus("Token salvo", "saved");
+  });
+  btnConfirmLoadGist.addEventListener("click", () => {
+    loadGistById(gistIdInput.value);
+  });
+
+  // Fechar modais
+  document.querySelectorAll("[data-close]").forEach((el) => {
+    el.addEventListener("click", () => {
+      modalSaveGist.hidden = true;
+      modalSettings.hidden = true;
+      modalLoadGist.hidden = true;
+    });
+  });
 
   livePreviewToggle.addEventListener("change", function () {
     livePreviewEnabled = this.checked;
@@ -351,14 +649,15 @@
     updateCharCount();
   });
 
-  // Atalhos
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !fullscreenOverlay.hidden) {
-      closeFullscreen();
+    if (e.key === "Escape") {
+      if (!fullscreenOverlay.hidden) closeFullscreen();
+      modalSaveGist.hidden = true;
+      modalSettings.hidden = true;
+      modalLoadGist.hidden = true;
     }
   });
 
-  // Aviso ao sair com alterações
   window.addEventListener("beforeunload", function (e) {
     if (isDirty) {
       e.preventDefault();
@@ -370,4 +669,5 @@
   updatePreview();
   updateCharCount();
   setStatus("Pronto", "saved");
+  renderProjectList();
 })();
