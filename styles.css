@@ -317,13 +317,48 @@ button { font-family: inherit; }
   color: var(--accent-strong);
 }
 
-.project-list:empty::after {
-  content: 'Nenhum projeto salvo ainda.';
+.project-list li.empty {
   display: block;
+  cursor: default;
   padding: 16px 6px;
   color: var(--text-tertiary);
   font-size: 12.5px;
+  line-height: 1.6;
 }
+
+.project-list li.empty:hover { background: none; }
+
+.proj-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proj-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.proj-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.proj-actions button:hover { background: var(--bg-elevated-2); color: var(--text-primary); }
+.proj-actions button.del:hover { color: var(--danger); }
 
 .sidebar-footer {
   padding: 12px 16px;
@@ -339,6 +374,14 @@ button { font-family: inherit; }
 
 .sidebar-backdrop {
   display: none;
+}
+
+.sidebar-backdrop.visible {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  background: rgba(6, 7, 10, 0.55);
 }
 
 /* ---------- content / toolbar ---------- */
@@ -388,6 +431,7 @@ button { font-family: inherit; }
   border-radius: 999px;
   background: rgba(110, 231, 183, 0.1);
   border: 1px solid rgba(110, 231, 183, 0.25);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .status::before {
@@ -396,6 +440,19 @@ button { font-family: inherit; }
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+  flex-shrink: 0;
+}
+
+.status.editing {
+  color: var(--accent-strong);
+  background: rgba(242, 181, 68, 0.1);
+  border-color: rgba(242, 181, 68, 0.25);
+}
+
+.status.error {
+  color: var(--danger);
+  background: rgba(244, 113, 116, 0.1);
+  border-color: rgba(244, 113, 116, 0.25);
 }
 
 .gist-link {
@@ -492,6 +549,27 @@ button { font-family: inherit; }
   background: var(--bg-void);
 }
 
+/* Modo Dividido (padrão): editor e preview lado a lado — nada a sobrescrever. */
+
+/* Modo Código: só o editor, preview e o resizer somem. */
+.workspace.mode-editor .preview-panel,
+.workspace.mode-editor .resizer {
+  display: none;
+}
+.workspace.mode-editor .editor-panel {
+  flex: 1 1 100% !important;
+}
+
+/* Modo Preview: só o preview, editor e o resizer somem. */
+.workspace.mode-preview .editor-panel,
+.workspace.mode-preview .resizer {
+  display: none;
+}
+.workspace.mode-preview .preview-panel {
+  flex: 1 1 100% !important;
+  border-left: none;
+}
+
 .panel-header {
   display: flex;
   align-items: center;
@@ -531,7 +609,7 @@ button { font-family: inherit; }
   position: relative;
 }
 
-.resizer:hover, .resizer:active { background: var(--accent-dim); }
+.resizer:hover, .resizer.active { background: var(--accent-dim); }
 
 .preview-panel { border-left: 1px solid var(--border); }
 
@@ -689,7 +767,7 @@ button { font-family: inherit; }
 
 /* ---------- responsive ---------- */
 
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .header { padding: 10px 14px; }
   .logo h1 { font-size: 14px; }
   .header-actions .btn span,
@@ -704,17 +782,12 @@ button { font-family: inherit; }
     box-shadow: var(--shadow-pop);
   }
   .sidebar.collapsed { margin-left: -260px; }
-  .sidebar:not(.collapsed) ~ .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 58px 0 0 0;
-    background: rgba(6, 7, 10, 0.55);
-    z-index: 140;
-  }
+  .sidebar-backdrop.visible { top: 58px; }
 
   .workspace { flex-direction: column; }
   .resizer { display: none; }
   .preview-panel { border-left: none; border-top: 1px solid var(--border); }
+  .workspace.mode-preview .preview-panel { border-top: none; }
   .toolbar-center { order: 3; width: 100%; }
   .view-modes { width: 100%; justify-content: center; }
 }
