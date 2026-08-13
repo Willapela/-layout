@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTML Editor Pro — Upload, Edite, Salve e Visualize</title>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="styles.css?v=6">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
@@ -15,7 +17,7 @@
     <header class="header">
       <div class="logo">
         <button class="icon-btn sidebar-toggle" id="btn-toggle-sidebar" title="Mostrar/ocultar projetos">☰</button>
-        <span class="logo-icon">&lt;/&gt;</span>
+        <span class="logo-icon"></span>
         <div>
           <h1>HTML Editor Pro</h1>
           <p class="tagline">Upload • Edite • Salve • Visualize</p>
@@ -28,19 +30,19 @@
             <polyline points="17 8 12 3 7 8"/>
             <line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
-          Upload
+          <span>Upload</span>
         </label>
         <input type="file" id="file-input" accept=".html,.htm,.txt" hidden>
 
-        <button class="btn btn-secondary" id="btn-new" title="Novo arquivo">Novo</button>
-        <button class="btn btn-secondary" id="btn-download" title="Baixar HTML">Baixar</button>
+        <button class="btn btn-secondary" id="btn-new" title="Novo arquivo"><span>Novo</span></button>
+        <button class="btn btn-secondary" id="btn-download" title="Baixar HTML"><span>Baixar</span></button>
         <button class="btn btn-accent" id="btn-save-gist" title="Salvar online via Gist">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
             <polyline points="17 21 17 13 7 13 7 21"/>
             <polyline points="7 3 7 8 15 8"/>
           </svg>
-          Salvar Gist
+          <span>Salvar Gist</span>
         </button>
         <button class="btn btn-secondary" id="btn-fullscreen-preview" title="Abrir HTML em tela cheia">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -49,9 +51,9 @@
             <line x1="21" y1="3" x2="14" y2="10"/>
             <line x1="3" y1="21" x2="10" y2="14"/>
           </svg>
-          Tela cheia
+          <span>Tela cheia</span>
         </button>
-        <button class="btn btn-ghost" id="btn-settings" title="Configurações (Token GitHub)">⚙ Config</button>
+        <button class="btn btn-ghost" id="btn-settings" title="Configurações (Token GitHub)">⚙️ <span>Config</span></button>
       </div>
     </header>
 
@@ -97,7 +99,7 @@
               <input type="checkbox" id="live-preview" checked>
               <span>Ao vivo</span>
             </label>
-            <button class="btn btn-sm" id="btn-run" title="Atualizar preview (Ctrl+Enter)">▶ Atualizar</button>
+            <button class="btn btn-sm" id="btn-run" title="Atualizar preview (Ctrl+Enter)">▶️ Atualizar</button>
             <button class="btn btn-sm" id="btn-format" title="Formatar código">Formatar</button>
           </div>
         </div>
@@ -121,7 +123,7 @@
               <span>Preview</span>
               <div class="panel-actions">
                 <button class="icon-btn" id="btn-refresh" title="Recarregar">↻</button>
-                <button class="icon-btn" id="btn-open-new" title="Abrir em nova aba">↗</button>
+                <button class="icon-btn" id="btn-open-new" title="Abrir em nova aba">↗️</button>
               </div>
             </div>
             <iframe id="preview" sandbox="allow-scripts allow-same-origin allow-modals allow-forms" title="Preview do HTML"></iframe>
@@ -224,6 +226,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/xml-hint.min.js"></script>
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>
