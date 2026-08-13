@@ -306,6 +306,7 @@
   }
 
   function openFullscreen() {
+    updatePreview();
     const code = editor.getValue();
     try {
       const doc = previewFullscreen.contentDocument || previewFullscreen.contentWindow.document;
@@ -314,10 +315,35 @@
       doc.close();
     } catch (e) {}
     fullscreenOverlay.hidden = false;
+    fullscreenOverlay.removeAttribute("hidden");
+    fullscreenOverlay.style.display = "flex";
   }
 
   function closeFullscreen() {
     fullscreenOverlay.hidden = true;
+    fullscreenOverlay.setAttribute("hidden", "");
+    fullscreenOverlay.style.display = "none";
+  }
+
+  function setViewMode(mode) {
+    const workspace = document.querySelector(".workspace");
+    if (!workspace) return;
+    workspace.classList.remove("mode-editor", "mode-split", "mode-preview");
+    if (mode === "editor") workspace.classList.add("mode-editor");
+    else if (mode === "preview") workspace.classList.add("mode-preview");
+    else workspace.classList.add("mode-split");
+
+    document.querySelectorAll(".view-mode").forEach((btn) => {
+      btn.classList.toggle("active", btn.getAttribute("data-mode") === mode);
+    });
+
+    if (mode === "preview" || mode === "split") {
+      updatePreview();
+    }
+    // CodeMirror needs refresh when panel becomes visible again
+    setTimeout(() => {
+      try { editor.refresh(); } catch (e) {}
+    }, 50);
   }
 
   function formatCode() {
@@ -622,6 +648,12 @@
   btnCloseFullscreen.addEventListener("click", closeFullscreen);
   btnOpenNewFs.addEventListener("click", openInNewTab);
 
+  document.querySelectorAll(".view-mode").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setViewMode(btn.getAttribute("data-mode") || "split");
+    });
+  });
+
   function isMobileLayout() {
     return window.matchMedia("(max-width: 900px)").matches;
   }
@@ -730,6 +762,13 @@
       setSidebarOpen(true);
     }
   });
+
+  // No celular começa no modo Código (mais espaço); desktop em Dividido
+  if (isMobileLayout()) {
+    setViewMode("editor");
+  } else {
+    setViewMode("split");
+  }
 
   updatePreview();
   updateCharCount();

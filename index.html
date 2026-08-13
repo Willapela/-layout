@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTML Editor Pro — Upload, Edite, Salve e Visualize</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
@@ -42,14 +42,14 @@
           </svg>
           Salvar Gist
         </button>
-        <button class="btn btn-ghost" id="btn-fullscreen-preview" title="Visualizar HTML completo">
+        <button class="btn btn-secondary" id="btn-fullscreen-preview" title="Abrir HTML em tela cheia">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="15 3 21 3 21 9"/>
             <polyline points="9 21 3 21 3 15"/>
             <line x1="21" y1="3" x2="14" y2="10"/>
             <line x1="3" y1="21" x2="10" y2="14"/>
           </svg>
-          Ver completo
+          Tela cheia
         </button>
         <button class="btn btn-ghost" id="btn-settings" title="Configurações (Token GitHub)">⚙ Config</button>
       </div>
@@ -85,10 +85,17 @@
             <span class="status" id="status">Pronto</span>
             <span class="gist-link" id="gist-link" hidden></span>
           </div>
+          <div class="toolbar-center">
+            <div class="view-modes" id="view-modes" role="tablist">
+              <button type="button" class="view-mode" data-mode="editor" title="Só código">Código</button>
+              <button type="button" class="view-mode active" data-mode="split" title="Código + Preview">Dividido</button>
+              <button type="button" class="view-mode" data-mode="preview" title="Só Preview (completo)">Preview</button>
+            </div>
+          </div>
           <div class="toolbar-right">
             <label class="toggle">
               <input type="checkbox" id="live-preview" checked>
-              <span>Preview ao vivo</span>
+              <span>Ao vivo</span>
             </label>
             <button class="btn btn-sm" id="btn-run" title="Atualizar preview (Ctrl+Enter)">▶ Atualizar</button>
             <button class="btn btn-sm" id="btn-format" title="Formatar código">Formatar</button>
@@ -216,6 +223,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/xml-hint.min.js"></script>
-  <script src="app.js?v=3"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
