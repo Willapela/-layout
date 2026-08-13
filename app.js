@@ -711,9 +711,11 @@
   });
 
   // ========== Inicialização ==========
-  // No celular a sidebar começa fechada
+  // Desktop abre a sidebar; celular mantém fechada (HTML já vem com class collapsed)
   if (isMobileLayout()) {
     setSidebarOpen(false);
+  } else {
+    setSidebarOpen(true);
   }
 
   const sidebarBackdrop = document.getElementById("sidebar-backdrop");
@@ -722,9 +724,10 @@
   }
 
   window.addEventListener("resize", () => {
-    if (!isMobileLayout()) {
-      sidebar.classList.remove("collapsed");
-      if (sidebarBackdrop) sidebarBackdrop.classList.remove("visible");
+    if (isMobileLayout()) {
+      setSidebarOpen(false);
+    } else {
+      setSidebarOpen(true);
     }
   });
 

@@ -21,6 +21,7 @@
 
 html, body {
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   font-family: var(--font-sans);
   background: var(--bg);
@@ -30,7 +31,9 @@ html, body {
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
 }
 
 /* Header */
@@ -179,6 +182,7 @@ html, body {
   margin-left: calc(-1 * var(--sidebar-width));
   opacity: 0;
   pointer-events: none;
+  transform: none;
 }
 
 .sidebar-header {
@@ -570,30 +574,41 @@ html, body {
     position: relative;
   }
 
+  /* Sidebar vira overlay — não empurra o conteúdo */
   .sidebar {
-    position: absolute;
+    position: fixed;
     left: 0;
     top: 0;
     bottom: 0;
-    z-index: 100;
+    height: 100%;
+    height: 100dvh;
+    z-index: 200;
     box-shadow: 4px 0 24px rgba(0,0,0,0.5);
     transition: transform 0.25s ease, opacity 0.2s ease;
+    margin-left: 0 !important;
+    min-width: min(280px, 85vw);
+    width: min(280px, 85vw);
   }
 
   .sidebar.collapsed {
-    margin-left: 0;
-    transform: translateX(-105%);
+    margin-left: 0 !important;
+    transform: translateX(-110%);
     opacity: 0;
     pointer-events: none;
   }
 
-  /* overlay escuro quando sidebar aberta */
+  .content {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    min-width: 0;
+  }
+
   .sidebar-backdrop {
     display: none;
-    position: absolute;
+    position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.45);
-    z-index: 90;
+    background: rgba(0,0,0,0.5);
+    z-index: 190;
   }
   .sidebar-backdrop.visible {
     display: block;
