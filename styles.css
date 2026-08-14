@@ -462,6 +462,16 @@ button { font-family: inherit; }
   color: var(--violet);
 }
 
+.gist-link a {
+  color: var(--violet);
+  text-decoration: none;
+}
+
+.gist-link a:hover {
+  color: var(--accent-strong);
+  text-decoration: underline;
+}
+
 .view-modes {
   display: inline-flex;
   padding: 3px;
