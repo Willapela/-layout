@@ -776,6 +776,10 @@ button { font-family: inherit; }
   .logo h1 { font-size: 14px; }
   .header-actions .btn span,
   .btn-block-label { display: none; }
+  .header-actions .btn {
+    padding: 8px 10px;
+    gap: 0;
+  }
 
   .sidebar {
     position: fixed;
